@@ -42,7 +42,26 @@ computations either accept or reject on its merits.
 * `check.sh` — builds everything, then runs `Check.lean` (the theorem's axioms;
   no `sorry`, no `native_decide`, no scratch modules) and `Audit.lean` (the
   negative controls).
-* `build_pool.py --jobs N [--clean]` — the same `lean` invocations Lake would
-  run, with a fixed number of parallel jobs, reporting per-module time and peak
-  memory; this is what `build.sh` uses, and where the build timings in the
-  README come from.
+* `build_pool.py` — the same `lean` invocations Lake would run, but never more
+  than `--jobs` at a time and never admitting a module whose predicted peak
+  would push the total past `--memory` (defaults: `min(32, 90% of cores)` and
+  75 % of available memory).  This is what `build.sh` uses.
+
+  Ready modules start in order of *critical path* — a module's own time plus
+  the longest chain of modules waiting on it — so the long poles start early,
+  and a module that does not fit the remaining budget is skipped over rather
+  than waited for.  Both come from `module_cost.tsv` below.  `--dry-run`
+  prints the plan and predicted makespan without building, which is how to
+  sweep `--jobs` for the point where the build turns memory-bandwidth-bound.
+
+* `module_cost.tsv` — per-module wall time and peak memory, committed so that a
+  first build schedules well on an unfamiliar machine.  Peak memory carries
+  across machines; times do not, but only their *ratios* matter to the
+  ordering.  Every run writes its own measurements to
+  `.lake/build/module_cost.tsv`, which overlays the committed table on the next
+  run; `--save-profile scripts/module_cost.tsv` updates the committed one.
+
+  It is only ever a hint.  The dependency graph is parsed afresh from the
+  sources on every run, so a missing, stale or wrong table costs packing
+  quality and nothing else — the build is the same build, and says so in a
+  warning.

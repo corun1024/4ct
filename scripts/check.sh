@@ -32,7 +32,13 @@ if ls FourColor/Research*.lean FourColor/*Probe*.lean >/dev/null 2>&1; then
   exit 1
 fi
 
-lake build >/dev/null || { echo "FAIL: build" >&2; exit 1; }
+# Deliberately not `lake build`: Lake tracks its own trace files and knows
+# nothing about the oleans `build_pool.py` writes, so it would rebuild the whole
+# development — and it starts one job per hardware thread, which with modules
+# that peak at 20 GB is how a large machine runs out of memory.  build_pool.py
+# is incremental and schedules under a memory budget, and is a no-op when
+# `build.sh` has just run it.
+scripts/build_pool.py || { echo "FAIL: build" >&2; exit 1; }
 
 # Anti-vacuity negative controls: a proof can be sorry-free, axiom-clean and
 # still worthless if its decision procedures accept everything.  Each example in
