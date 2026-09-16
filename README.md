@@ -31,12 +31,12 @@ essentially all of it: the Lean proofs, the certificate engines in `tools/`,
 and the generators in `scripts/`. The repository layout and the build tooling
 were done with Claude Opus 5.
 
-Non-enterprise Claude Max subscriptions are heavily subsidised, so this did not
-cost me personally more than $200. But claude reports that if the API were used
-directly, then the token cost would have been around $5k.
-
 Due to heavy AI use, please do not take the theorem on the author's authority,
 or the model's. Read the statement and run the checker. See next section.
+
+Non-enterprise Claude Max subscriptions are heavily subsidised, so this did not
+cost me personally more than $200. But Claude reports that if the API were used
+directly, then the token cost would have been around $5k.
 
 ## Auditing the statement
 
