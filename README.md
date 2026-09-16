@@ -42,9 +42,12 @@ mostly the construction of `Real`.
 So to audit this:
 
 1. Read `FourColor/RealPlane.lean` and satisfy yourself the statement is the
-   Four Colour Theorem. `FourColor/RealPlaneMathlib.lean` helps: it proves the
-   file's three topological notions are Mathlib's `IsOpen`, `closure` and
-   `IsPreconnected`.
+   Four Colour Theorem. Its three elementary topological notions are each
+   proved to be Mathlib's: `isOpenRegion_iff` and `regionClosure_eq` in that
+   file, and `isConnectedRegion_iff_isPreconnected` in
+   `FourColor/RealPlaneMathlib.lean`, which also gives `simpleMap_iff` —
+   the theorem's whole hypothesis restated as `PlainMap m ∧ (∀ z, IsOpen (m z))
+   ∧ ∀ z, IsPreconnected (m z)`.
 2. Confirm `FourColor.fourColorTheorem : FourColorTheorem` in
    `FourColor/Complete.lean`.
 3. Run `./build.sh` and read its last three lines.
