@@ -7,8 +7,8 @@ import FourColor.RealPlaneMathlib
 
 /-! # Anti-vacuity audit
 
-`check.sh` shows the development has no `sorry`, no `native_decide` and no
-non-standard axioms.  That is necessary and not sufficient: a proof can be
+`check.sh` shows the development has no `sorry`, no compiled-evaluation escape
+hatch and no non-standard assumptions.  That is necessary and not sufficient: a proof can be
 perfectly sound and still worthless if the *checkers* it relies on accept
 everything, or if the statement is weaker than it looks.
 

@@ -31,6 +31,8 @@ Usage, from the project root, after `lake exe cache get`:
     scripts/build_pool.py [--jobs N] [--memory GB] [--clean] [--dry-run]
 """
 import argparse
+import hashlib
+import json
 import os
 import re
 import subprocess
@@ -41,6 +43,7 @@ from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 LEAN_OPTS = ['-Dpp.unicode.fun=true', '-DautoImplicit=false', '-DrelaxedAutoImplicit=false',
              '-Dweak.linter.mathlibStandardSet=true', '-DmaxSynthPendingDepth=3']
 
+FINGERPRINTS = '.lake/build/fourcolor_fingerprints.json'
 PROFILE = 'scripts/module_cost.tsv'
 LOCAL_PROFILE = '.lake/build/module_cost.tsv'
 # p90 of the measured distribution: above the typical module, below the tail,
@@ -69,24 +72,77 @@ def imports(path):
     return set(re.findall(r'^import (FourColor(?:\.[A-Za-z0-9_]+)*)\s*$', text, re.M))
 
 
-def uptodate(name, path, deps):
-    """Whether `name`'s olean is newer than its source and than every dependency's.
+def env_fingerprint(opts):
+    """Everything outside a module's own source that changes what `lean` produces.
 
-    Lake's own trace files are not consulted, so this is deliberately
-    conservative: any doubt rebuilds, and the `lake build` that follows would
-    catch a wrong skip anyway.
+    Mathlib's revision is covered via `lake-manifest.json`, the compiler via
+    `lean-toolchain`, and the build options both via `opts` and `lakefile.toml`.
+    Miss any of these and a stale olean built against a different Mathlib looks
+    current.
     """
+    h = hashlib.sha256()
+    h.update('\x00'.join(opts).encode())
+    for f in ('lean-toolchain', 'lakefile.toml', 'lake-manifest.json'):
+        try:
+            with open(f, 'rb') as fh:
+                h.update(fh.read())
+        except OSError:
+            h.update(b'<missing>')
+    return h.hexdigest()
+
+
+def content_ids(mods, deps, envfp):
+    """`{module: sha256 of its source, the environment, and its dependencies' ids}`.
+
+    Recursive, so touching any transitive dependency changes a module's id.
+    This is what makes a skip mean "this olean was built from exactly this
+    input", which an mtime comparison does not: an olean can be newer than its
+    source and still be the product of different source.
+    """
+    ids, remaining = {}, set(mods)
+    while remaining:
+        ready = [m for m in remaining if deps[m] <= ids.keys()]
+        if not ready:
+            break
+        for m in sorted(ready):
+            h = hashlib.sha256()
+            h.update(envfp.encode())
+            try:
+                with open(mods[m], 'rb') as fh:
+                    h.update(fh.read())
+            except OSError:
+                h.update(b'<unreadable>')
+            for d in sorted(deps[m]):
+                h.update(ids[d].encode())
+            ids[m] = h.hexdigest()
+            remaining.discard(m)
+    return ids
+
+
+def load_fingerprints(path):
+    try:
+        with open(path) as fh:
+            got = json.load(fh)
+        return got if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_fingerprints(path, fps):
+    try:
+        d = os.path.dirname(path)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        with open(path, 'w') as fh:
+            json.dump(fps, fh, indent=0, sort_keys=True)
+    except OSError as e:
+        print(f'warning: could not write {path}: {e}', file=sys.stderr)
+
+
+def uptodate(name, recorded, ids):
+    """Whether this olean exists and was built from exactly this input."""
     olean = os.path.join('.lake/build/lib/lean', name.replace('.', '/') + '.olean')
-    if not os.path.exists(olean):
-        return False
-    t = os.path.getmtime(olean)
-    if t <= os.path.getmtime(path):
-        return False
-    for d in deps:
-        dol = os.path.join('.lake/build/lib/lean', d.replace('.', '/') + '.olean')
-        if not os.path.exists(dol) or t <= os.path.getmtime(dol):
-            return False
-    return True
+    return os.path.exists(olean) and recorded.get(name) == ids.get(name)
 
 
 def load_profile(paths, warn):
@@ -268,9 +324,16 @@ def main():
     cp = critical_path(mods, deps, seconds)
 
     # `--clean --dry-run` plans a full build without destroying the current one.
+    envfp = env_fingerprint(LEAN_OPTS)
+    ids = content_ids(mods, deps, envfp)
     if args.clean and not args.dry_run:
         subprocess.run(['rm', '-rf', '.lake/build/lib/lean/FourColor', '.lake/build/lib/lean/FourColor.olean',
                         '.lake/build/lib/lean/FourColor.ilean'])
+        try:
+            os.remove(FINGERPRINTS)
+        except OSError:
+            pass
+    recorded = {} if args.clean else load_fingerprints(FINGERPRINTS)
     done, running, failed = set(), {}, []
     pending = set(mods)
     if not args.clean:
@@ -280,11 +343,13 @@ def main():
         while progress:
             progress = False
             for m in list(pending):
-                if deps[m] <= done and uptodate(m, mods[m], deps[m]):
+                if deps[m] <= done and uptodate(m, recorded, ids):
                     pending.discard(m); done.add(m); progress = True
         if done:
             print(f'up to date: {len(done)} modules; {len(pending)} to build', flush=True)
+    skipped_uptodate = set(done)
 
+    skipped_uptodate = locals().get('skipped_uptodate', set())
     work = sum(seconds(m) for m in pending)
     eta = simulate(mods, deps, done, cp, seconds, mb, args.jobs, budget_mb)
     print(f'plan: {len(pending)} modules, {work / 3600:.1f} core-hours, '
@@ -312,7 +377,8 @@ def main():
 
     measured, over = {}, []
     running_mb = 0.0
-    log = open(args.log, 'w')
+    log = open(args.log, 'a')
+    log.write(f'--- {time.strftime("%Y-%m-%d %H:%M:%S")} jobs {args.jobs} memory {args.memory:.0f}GB skipped-uptodate {len(skipped_uptodate)}\n')
     t_start = time.time()
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         while pending or running:
@@ -333,6 +399,7 @@ def main():
                 peak_mb = peak // 1024
                 if rc == 0:
                     measured[name] = (dt, peak_mb)
+                    recorded[name] = ids.get(name)
                     if peak_mb > mb(name) * DRIFT:
                         over.append(name)
                 line = f'{name} {dt:.1f}s {peak_mb}MB rc={rc}' + (' ' + ' | '.join(err) if err else '')
@@ -341,10 +408,15 @@ def main():
                     failed.append(name)
     wall = time.time() - t_start
     save_profile(args.save_profile, prof, measured)
+    save_fingerprints(FINGERPRINTS, recorded)
     if over:
         print(f'warning: {len(over)} modules exceeded their predicted peak by over '
               f'{int((DRIFT - 1) * 100)}% (table updated)', file=sys.stderr)
-    summary = (f'WALL {wall:.0f}s modules {len(done)} failed {len(failed)} skipped {len(pending)} '
+    # `compiled` is what this run actually put through the kernel; conflating it
+    # with modules skipped as up to date is how a log comes to claim more than
+    # the run did.
+    summary = (f'WALL {wall:.0f}s compiled {len(measured)} skipped-uptodate {len(skipped_uptodate)} '
+               f'failed {len(failed)} not-built {len(pending)} total {len(mods)} '
                f'jobs {args.jobs} memory {args.memory:.0f}GB')
     print(summary, flush=True); log.write(summary + '\n')
     return 1 if failed or pending else 0

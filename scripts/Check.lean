@@ -1,7 +1,7 @@
 import FourColor
 
-/-! Fails the build if any `FourColor` declaration is a `sorry` or depends on an
-axiom beyond `propext`, `Classical.choice` and `Quot.sound`. -/
+/-! Fails the build if any `FourColor` declaration is a `sorry`, or rests on
+anything beyond `propext`, `Classical.choice` and `Quot.sound`. -/
 
 open Lean Elab Command in
 run_cmd do

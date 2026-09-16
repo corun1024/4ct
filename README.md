@@ -6,7 +6,7 @@ following the architecture of Georges Gonthier and Benjamin Werner's Coq proof
 
 ```
 THEOREM PROVED: FourColor.fourColorTheorem depends only on [propext, Classical.choice, Quot.sound]
-checked 115252 FourColor declarations: no sorries, no extra axioms
+checked 115342 FourColor declarations: no sorries, no extra axioms
 anti-vacuity audit: negative controls pass
 ```
 
@@ -73,7 +73,7 @@ So to audit this:
 ```
 
 That does everything: fetches Mathlib from the build cache, regenerates the
-reducibility certificates if they are absent, builds all 820 modules, then runs
+reducibility certificates if they are absent, builds all 821 modules, then runs
 the axiom and anti-vacuity checks. Each step is a no-op when it has nothing
 left to do, so you can re-run it after an interruption.
 
@@ -99,7 +99,7 @@ computations.
 
 Lake starts one job per hardware thread and offers no way to ask for fewer.
 That is the wrong policy here, because the memory profile of this development
-is extremely uneven. Measured across all 820 modules the median peak is
+is extremely uneven. Measured across all 821 modules the median peak is
 2.7 GB, but the p99 is 11.4 GB and `Bulk/Cfg/Hyb218B` alone peaks at 20.1 GB.
 Eight modules exceed 12 GB. Running 64 of those concurrently exhausts 94 GB.
 

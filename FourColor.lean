@@ -62,3 +62,4 @@ import FourColor.Unavoidability
 import FourColor.Main
 import FourColor.RealPlaneMathlib
 import FourColor.Complete
+import FourColor.Nonvacuity
