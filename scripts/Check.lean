@@ -27,12 +27,19 @@ run_cmd do
   -- whether the theorem itself is present, and check it by name if so.  Without
   -- this, an empty or partial build passes the axiom check in silence.
   let goal : Name := `FourColor.fourColorTheorem
+  -- The axioms of a declaration say nothing about *what* it states.  Without
+  -- this, a build in which `fourColorTheorem` were bound to `True` would report
+  -- `THEOREM PROVED` and be telling the truth about its axioms.
+  let goalType : Name := `FourColor.FourColorTheorem
   let status ←
     if env.contains goal then do
+      let some info := env.find? goal | throwError "{goal} vanished from the environment"
+      unless info.type.isConstOf goalType do
+        throwError "{goal} does not state {goalType}; its type is {info.type}"
       let axs ← liftCoreM <| collectAxioms goal
       let extra := axs.filter (fun a => !allowed.contains a)
       if extra.isEmpty then
-        pure s!"THEOREM PROVED: {goal} depends only on {axs.toList}"
+        pure s!"THEOREM PROVED: {goal} : {goalType} depends only on {axs.toList}"
       else
         throwError "{goal} depends on non-standard axioms: {extra}"
     else

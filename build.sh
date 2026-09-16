@@ -18,7 +18,7 @@
 #
 # On success the last lines read
 #
-#   THEOREM PROVED: FourColor.fourColorTheorem depends only on [propext, Classical.choice, Quot.sound]
+#   THEOREM PROVED: FourColor.fourColorTheorem : FourColor.FourColorTheorem depends only on [...]
 set -euo pipefail
 cd "$(dirname "$0")"
 

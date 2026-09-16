@@ -5,7 +5,7 @@ following the architecture of Georges Gonthier and Benjamin Werner's Coq proof
 ([rocq-community/fourcolor](https://github.com/rocq-community/fourcolor)).
 
 ```
-THEOREM PROVED: FourColor.fourColorTheorem depends only on [propext, Classical.choice, Quot.sound]
+THEOREM PROVED: FourColor.fourColorTheorem : FourColor.FourColorTheorem depends only on [propext, Classical.choice, Quot.sound]
 checked 115342 FourColor declarations: no sorries, no extra axioms
 anti-vacuity audit: negative controls pass
 ```
