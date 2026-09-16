@@ -24,6 +24,34 @@ Mathlib's, and `FourColor/RealPlaneMathlib.lean` proves the statement's
 elementary topology agrees with Mathlib's `IsOpen`, `closure` and
 `IsPreconnected`, so it can be read in either vocabulary.
 
+## Auditing the statement
+
+Checking that a formal proof proves the right thing means reading its
+statement, not its proof. That reading is deliberately small here.
+
+`FourColor/RealPlane.lean` is 195 lines and imports three Mathlib topology
+modules and nothing else — no module of this development. The transitive
+dependency closure of `FourColorTheorem` touches 943 constants, of which 28
+belong to this repository, and all 28 are defined in that one file: `Point`,
+`Region`, `PlaneMap`, `Rect`, `IsOpenRegion`, `regionClosure`,
+`IsConnectedRegion`, `PlainMap`, `SimpleMap`, `cover`, `border`, `notCorner`,
+`Adjacent`, `Coloring`, `ColorableWith`, `FourColorTheorem`, and their
+constructors and projections. The remaining 915 are Lean core and Mathlib,
+mostly the construction of `Real`.
+
+So to audit this:
+
+1. Read `FourColor/RealPlane.lean` and satisfy yourself the statement is the
+   Four Colour Theorem. `FourColor/RealPlaneMathlib.lean` helps: it proves the
+   file's three topological notions are Mathlib's `IsOpen`, `closure` and
+   `IsPreconnected`.
+2. Confirm `FourColor.fourColorTheorem : FourColorTheorem` in
+   `FourColor/Complete.lean`.
+3. Run `./build.sh` and read its last three lines.
+
+Nothing in the other 819 modules can change what is being claimed. They can
+only fail to prove it, and the kernel decides that.
+
 ## Building
 
 ```shell
