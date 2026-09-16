@@ -24,6 +24,29 @@ Mathlib's, and `FourColor/RealPlaneMathlib.lean` proves the statement's
 elementary topology agrees with Mathlib's `IsOpen`, `closure` and
 `IsPreconnected`, so it can be read in either vocabulary.
 
+## AI disclosure
+
+This development was written with heavy use of AI. Claude Fable 5.1 produced
+essentially all of it: the Lean proofs, the certificate engines in `tools/`,
+and the generators in `scripts/`. The repository layout and the build tooling
+were done with Claude Opus 5. Read the git history for the split.
+
+That matters less here than it would almost anywhere else, and it is worth
+being precise about why:
+
+- The proof is machine-checked. Lean's kernel accepts it or it does not, and
+  plausible-looking argument counts for nothing. `scripts/check.sh` confirms it
+  rests on `propext`, `Classical.choice` and `Quot.sound` and nothing else,
+  with no `sorry` and no `native_decide`.
+- The kernel cannot check that the *statement* is the right one. That is the
+  195 lines below, and reading them is the part nobody can do for you.
+- A proof can be axiom-clean and still worthless if its decision procedures
+  accept everything. `scripts/Audit.lean` shows each one rejects corrupted
+  data.
+
+So: do not take the theorem on the author's authority, or the model's. Read the
+statement and run the checker.
+
 ## Auditing the statement
 
 Checking that a formal proof proves the right thing means reading its
