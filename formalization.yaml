@@ -1,0 +1,220 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+version: "v0.4"
+
+project:
+  name: "The Four Colour Theorem in Lean 4"
+  description: >-
+    The Four Colour Theorem, formalized in Lean 4 over Mathlib, following the
+    architecture of Gonthier and Werner's Coq proof. The statement is Gonthier's,
+    clause for clause, over Mathlib's reals: every simple map of the real plane -
+    a partial equivalence relation on points of R^2 whose classes are open and
+    connected - admits a colouring with at most four regions in which adjacent
+    regions differ. The development carries the whole proof: hypermaps, the Euler
+    formula, planarity implying the Jordan curve property, Kempe chain surgery,
+    the reduction from the plane to finite maps by compactness, reducibility of
+    the 633 configurations, and the seven discharging presentations covering hub
+    arities five to eleven. Both computational halves are kernel-checked; there is
+    no `native_decide`.
+  authors:
+    - "Chris Emery"
+  responsible_maintainers:
+    - "Chris Emery"
+  license: "MIT"
+
+repository:
+  role: substantive-development
+
+sources:
+  - title: "Formal Proof - The Four-Color Theorem"
+    authors: ["Georges Gonthier"]
+    type: "paper"
+    id: "Notices of the AMS 55 (11), 2008, 1382-1393"
+    relationship: adapts
+    note: >-
+      The published account of the Coq proof whose architecture this development
+      follows: the reduction to finite planar hypermaps, the 633 reducible
+      configurations, and the seven discharging presentations. The Coq
+      development itself is listed under related_formalizations; the structure was
+      taken from it rather than from this article.
+
+  - title: "The four-colour theorem"
+    authors: ["Neil Robertson", "Daniel Sanders", "Paul Seymour", "Robin Thomas"]
+    type: "paper"
+    id: "J. Combin. Theory Ser. B 70 (1997), 2-44; doi:10.1006/jctb.1997.1750"
+    relationship: background
+    note: >-
+      The unavoidable set of 633 reducible configurations and the discharging
+      rules originate here, and reach this development through the Coq proof
+      rather than directly.
+
+  - title: "Mathlib"
+    authors: ["The mathlib community"]
+    type: "other"
+    id: "https://github.com/leanprover-community/mathlib4"
+    relationship: background
+    note: >-
+      Software dependency, not a mathematical source. The statement is over
+      Mathlib's real numbers, and FourColor/RealPlaneMathlib.lean identifies the
+      statement's elementary topology with Mathlib's IsOpen, closure and
+      IsPreconnected.
+
+related_formalizations:
+  - title: "The Four Colour Theorem (Coq/Rocq)"
+    authors: ["Georges Gonthier", "Benjamin Werner"]
+    id: "https://github.com/rocq-community/fourcolor"
+    relationship: adapts
+    note: >-
+      The development this one follows. Three kinds of data are mechanical
+      translations of it: FourColor/Configurations.lean from configurations.v,
+      the presentation scripts FourColor/Present*.lean from present*.v, and the
+      quiz data computed from the configurations. No Coq source text is copied.
+      Distributed under CeCILL-B, whose article 5.3.2 permits a derived work to
+      carry another licence provided the article 5.3.4 credits are given; those
+      credits are in LICENSE.
+
+classification:
+  arxiv: ["math.CO"]
+  msc2020: ["05C15", "68V20"]
+
+status:
+  scope: >-
+    Complete. FourColor.fourColorTheorem proves FourColor.FourColorTheorem, the
+    general (not merely finite) statement over the real plane. Both computational
+    halves are discharged in the development rather than assumed: reducibility of
+    all 633 configurations, and the seven unavoidability presentations. Every
+    computation is `decide +kernel`; there is no `native_decide`, no `axiom`, no
+    `sorry`, and no `partial`, `unsafe` or `opaque` definition. Two results of the
+    reference are deliberately not ported because nothing uses them - Jordan_planar
+    and Jordan_WalkupE, the converse direction of the planarity-Jordan equivalence.
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: [propext, Classical.choice, Quot.sound]
+  main_results:
+    - declaration: "FourColor.fourColorTheorem"
+      file: "FourColor/Complete.lean"
+      sorry_count: 0
+      axioms: [propext, Classical.choice, Quot.sound]
+      literature_dependencies: []
+
+automation:
+  methods:
+    - method: agent
+      models: ["Claude Fable 5.1"]
+      framework: "Claude Code"
+      notes: >-
+        Wrote essentially all of the development: the Lean proofs, the certificate
+        engines in tools/, and the generators in scripts/, under the direction of
+        the maintainer.
+    - method: agent
+      models: ["Claude Opus 5"]
+      framework: "Claude Code"
+      notes: >-
+        Repository layout, the build system (scripts/build_pool.py and build.sh),
+        the verification harness (scripts/check.sh, scripts/Check.lean), the
+        non-vacuity witness in FourColor/Nonvacuity.lean, and an adversarial audit
+        of the development.
+  spend_usd: >-
+    Subscription-based rather than metered: under $200 to the maintainer on a
+    Claude Max subscription. Estimated at roughly $5,000 had the same token volume
+    been billed at API list prices; that estimate is not measured.
+  notes: >-
+    Interactive agent-directed development throughout. The maintainer set the
+    targets and directed the work; the models wrote the Lean.
+
+fidelity:
+  divergences: >-
+    The statement is a faithful transcription of the reference's realplane.v and
+    fourcolor.v, definition by definition, with one difference: Coq states the
+    theorem over an arbitrary Real.model, whose points are denotations and whose
+    regions are not required to be extensional, because Coq's logic has no
+    quotient types. Here everything is stated over Mathlib's R, the extensional
+    case. The reference's own header notes that value equality on points is not
+    needed to state or prove the theorem, and realcategorical.v proves all models
+    isomorphic; the reduction between the two forms is not formally verified here.
+
+    The mathematics is expressed in Mathlib's structures rather than
+    transliterated from MathComp: the four colours are an AddCommGroup (the Klein
+    four-group), a hypermap is three Equiv.Perms with its cycle relations as
+    Equiv.Perm.SameCycle, orbit counts are Nat.card of a quotient, and arities are
+    Function.minimalPeriod. Several proofs are shorter in consequence.
+
+    The largest divergence is in how reducibility is checked. Coq runs a Kempe
+    closure program inside its kernel on a bytecode virtual machine added for that
+    proof. Lean's kernel has no equivalent and `native_decide` was ruled out, so
+    the computation was redesigned around wide GMP-accelerated Nat arithmetic: a
+    ring's trace set is one natural number of 3^(n-1) bits, and Kempe flips and
+    colour permutations become shift/and/or block moves. A one-chord rule settles
+    523 of the 633 configurations; the remaining 110 are certified by a chord-aware
+    mask walk over chromograms. This framework has no counterpart in the reference
+    and is the largest body of novel code in the development. Its soundness is
+    proved generically in FourColor/Bulk/ and FourColor/Mask*.lean, and every
+    generated certificate module reaches CfReducible through one of those two
+    proved theorems.
+
+review:
+  status: agent-reviewed
+  reviewers: []
+  notes: >-
+    Five independent adversarial audits were run over the development, by agents,
+    covering the faithfulness of the statement, soundness escapes, the composition
+    of the logical chain, the generated reducibility certificates, and the build
+    and verification machinery. They found no defect in the mathematics. The
+    certificate audit corrupted certificate data and confirmed the checks reject
+    it, including a cross-module test in which an over-claiming chord was rejected
+    by the kernel; the chain audit compared all 633 configurations against the
+    reference's configurations.v with no mismatches. Several real defects were
+    found in the verification harness and fixed: freshness is now decided by
+    content fingerprint rather than file timestamps, and the checker now tests
+    exit codes and requires the theorem to be present and to state
+    FourColor.FourColorTheorem. No external or independent human review has been
+    performed. Every step is checked by the Lean kernel.
+
+alignment:
+  namespace: "FourColor"
+  statements:
+    - source: "fourcolor.v, Theorem four_color: simple_map m -> colorable_with 4 m"
+      lean: "FourColor.fourColorTheorem"
+      module: "FourColor/Complete.lean"
+      status: proved
+      note: >-
+        The general statement. Its type, FourColor.FourColorTheorem, and all
+        fifteen definitions it depends on are declared in FourColor/RealPlane.lean,
+        which imports only Mathlib; the theorem's transitive dependency closure
+        touches 28 constants from this repository, all in that file.
+    - source: "realplane.v: plain_map, cover, at_most_regions, open, closure, connected, simple_map, border, corner_map, not_corner, adjacent, coloring, colorable_with"
+      lean: "PlainMap, cover, AtMostRegions, IsOpenRegion, regionClosure, IsConnectedRegion, SimpleMap, border, cornerMap, notCorner, Adjacent, Coloring, ColorableWith"
+      module: "FourColor/RealPlane.lean"
+      status: proved
+      note: "Transcribed clause for clause; verified against the reference source."
+    - source: "fourcolor.v, Theorem four_color_finite"
+      lean: "FourColor.FourColorTheoremFinite"
+      module: "FourColor/RealPlane.lean"
+      status: other
+      note: >-
+        Stated, but not exposed as a standalone theorem. The finite case is
+        established internally and reaches the general statement through
+        fourColorTheorem_of_finite in FourColor/Finitize.lean, by a compactness
+        argument using an ultrafilter in place of the reference's choice-free
+        lexicographic minimum.
+    - source: "configurations.v: the 633 reducible configurations"
+      lean: "FourColor.theConfigs"
+      module: "FourColor/Configurations.lean"
+      status: proved
+      note: "Mechanically translated; all 633 verified against the reference."
+    - source: "present5.v ... present11.v: the seven discharging presentations"
+      lean: "FourColor.exclude5 ... FourColor.exclude11"
+      module: "FourColor/Present5.lean ... FourColor/Present11.lean"
+      status: proved
+    - source: "The reducibility check (Coq: an in-kernel bytecode VM evaluation)"
+      lean: "cfReducible_of_bulkChecks, cfReducible_of_hybridT"
+      module: "FourColor/Bulk/Reducible.lean, FourColor/Bulk/HybridT.lean"
+      status: other
+      note: >-
+        Not a port. See fidelity.divergences: a new certificate framework built on
+        wide Nat arithmetic, proved sound generically, with all 633 configurations
+        routed through these two theorems.
+
+acknowledgements: >-
+  Mathlib, and Georges Gonthier and Benjamin Werner's Coq proof, whose structure
+  this development follows and from which its configuration database and
+  presentation scripts are mechanically translated.

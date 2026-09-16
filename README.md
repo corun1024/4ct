@@ -239,6 +239,14 @@ and `scripts/Audit.lean` supplies negative controls showing that each checker
 the proof relies on answers `false` somewhere — so a passing build cannot be a
 decision procedure that accepts everything. See `scripts/README.md`.
 
+## Project metadata
+
+`formalization.yaml` at the repository root reports provenance, process and
+fidelity in the [mathlib-initiative
+standard](https://github.com/mathlib-initiative/formalization.yaml): what was
+formalized, from what source, how faithfully, how it was produced, and what
+review it has had.
+
 ## Layout
 
 ```
