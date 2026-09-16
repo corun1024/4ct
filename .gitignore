@@ -1,0 +1,10 @@
+.lake/
+scripts/__pycache__/
+certgen/
+build_pool.log
+
+# Regenerated from FourColor/Configurations.lean by scripts/gen_certificates.sh,
+# which build.sh runs when they are absent.  See scripts/README.md.
+FourColor/Bulk/Cfg/
+FourColor/Mask/
+FourColor/Reduce/All.lean
